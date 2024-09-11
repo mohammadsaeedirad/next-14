@@ -18,8 +18,7 @@ import { toast } from "@/components/ui/use-toast"
 import { getYear } from "@/lib/utils"
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from "react"
-import { asyncGetBookById, asyncAddBook, asyncEditBook } from "@/app/service/Book"
-import { useParams } from 'next/navigation'
+import { asyncAddBook } from "@/app/service/Book"
 
 const year = getYear();
 const FormSchema = z.object({
@@ -37,9 +36,7 @@ const FormSchema = z.object({
   publishedYear:z.coerce.number().lte(year)
 })
 
-export function SubmitBookForm() {
-  const params = useParams<{ bookId: string}>()
-  const bookId =params?.bookId
+export function SubmitBookForm({book, bookId}:{book:object, bookId:string}) {
   const router = useRouter()
   const [loading, setLoading] = useState<boolean>(false);
 
@@ -54,26 +51,17 @@ export function SubmitBookForm() {
   })
   async function getBook (){
     const { reset } = form
-
-    try {
-      const book = await asyncGetBookById(bookId);
-      reset(book);
-
-    } catch (error: any) {
-      throw new Error(error.message);
-    }
-
+    reset(book);
   }
   useEffect(() => {
-    if(bookId){
+    if(book){
       getBook()
     }
   }, [])
-  async function onSubmit(data: z.infer<typeof FormSchema>) {
+  async function onSubmit(data: z.infer<any>) {
     setLoading(true)
-    if(bookId){
       try {
-        await asyncEditBook({...data,id:bookId});
+        await asyncAddBook(bookId ? {...data,id:bookId}:data);
         setLoading(false)
         toast({
           title: 'Book added successfully ;)',
@@ -85,23 +73,7 @@ export function SubmitBookForm() {
           variant: "destructive",
           title:'failed to add book :(',
         })
-      }  
-      return
-    }
-    try {
-      await asyncAddBook(data);
-      setLoading(false)
-      toast({
-        title: 'Book added successfully ;)',
-      })
-      router.push('/')
-    } catch (error: any) {
-      setLoading(false)
-      toast({
-        variant: "destructive",
-        title:'failed to add book :(',
-      })
-    }    
+      }     
   }
 
   return (
